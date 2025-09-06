@@ -1,0 +1,10 @@
+{
+  "chat.mcp.serverSampling": {
+    "gamified-todo/.vscode/mcp.json: Notion": {
+      "allowedModels": [
+        "copilot/gpt-4.1",
+        "copilot/claude-sonnet-4"
+      ]
+    }
+  }
+}
