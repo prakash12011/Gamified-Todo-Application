@@ -30,7 +30,7 @@ export function PWADebugPanel() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistration().then(registration => {
         setSwInfo({
-          registration,
+          registration: registration || null,
           controller: navigator.serviceWorker.controller,
           state: registration?.active?.state || 'none',
           scope: registration?.scope || 'none',
