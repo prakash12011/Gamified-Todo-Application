@@ -17,7 +17,7 @@ import {
 import Link from "next/link";
 
 export default function Topbar() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -38,9 +38,8 @@ export default function Topbar() {
   // Function to handle user logout
   const handleLogout = async () => {
     try {
-      // If there's a logout function in your auth hook, use it
-      if (typeof useAuth().signOut === 'function') {
-        await useAuth().signOut();
+      if (signOut) {
+        await signOut();
       } else {
         // Fallback: redirect to login page
         window.location.href = '/auth/login';

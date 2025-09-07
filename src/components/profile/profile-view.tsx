@@ -306,7 +306,7 @@ export function ProfileView({
             <TabsContent value="available" className="space-y-4">
               {lockedAchievements.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
-                  Congratulations! You've unlocked all available achievements.
+                  Congratulations! You have unlocked all available achievements.
                 </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

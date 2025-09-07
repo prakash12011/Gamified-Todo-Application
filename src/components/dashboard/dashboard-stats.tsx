@@ -123,7 +123,7 @@ export default function DashboardStats({ userId }: DashboardStatsProps) {
         {/* Today's Progress */}
         <InteractiveCard>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today's Tasks</CardTitle>
+            <CardTitle className="text-sm font-medium">Today Tasks</CardTitle>
             <Trophy className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>

@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
-import { Star, Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -214,7 +214,7 @@ export default function TodoList(todosProp: { todos: Todo[] }) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Todo</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Are you sure you want to delete "{todo.title}"? This action cannot be undone.
+                        Are you sure you want to delete &quot;{todo.title}&quot;? This action cannot be undone.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

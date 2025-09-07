@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,30 @@ export function VisionView({ initialVisionPlans, user }: VisionViewProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<VisionPlan | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  // Edit form state
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    timeline_years: 1 as 1 | 3 | 5 | 10,
+    category: '',
+    milestones: [''],
+    progress_percentage: 0,
+  });
+
+  // Update edit form when editing plan changes
+  useEffect(() => {
+    if (editingPlan) {
+      setEditFormData({
+        title: editingPlan.title,
+        description: editingPlan.description,
+        timeline_years: editingPlan.timeline_years,
+        category: editingPlan.category,
+        milestones: editingPlan.milestones.length > 0 ? editingPlan.milestones : [''],
+        progress_percentage: editingPlan.progress_percentage,
+      });
+    }
+  }, [editingPlan]);
 
   const getFilteredPlans = (timeline: number) => {
     return visionPlans.filter(plan => plan.timeline_years === timeline);
@@ -255,48 +279,39 @@ export function VisionView({ initialVisionPlans, user }: VisionViewProps) {
   const EditVisionPlanDialog = () => {
     if (!editingPlan) return null;
 
-    const [formData, setFormData] = useState({
-      title: editingPlan.title,
-      description: editingPlan.description,
-      timeline_years: editingPlan.timeline_years,
-      category: editingPlan.category,
-      milestones: editingPlan.milestones.length > 0 ? editingPlan.milestones : [''],
-      progress_percentage: editingPlan.progress_percentage,
-    });
-
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       
       const updatedPlan: VisionPlan = {
         ...editingPlan,
-        title: formData.title,
-        description: formData.description,
-        timeline_years: formData.timeline_years,
-        category: formData.category,
-        milestones: formData.milestones.filter(m => m.trim() !== ''),
-        progress_percentage: formData.progress_percentage,
-        target_date: format(addYears(new Date(editingPlan.created_at), formData.timeline_years), 'yyyy-MM-dd'),
+        title: editFormData.title,
+        description: editFormData.description,
+        timeline_years: editFormData.timeline_years,
+        category: editFormData.category,
+        milestones: editFormData.milestones.filter(m => m.trim() !== ''),
+        progress_percentage: editFormData.progress_percentage,
+        target_date: format(addYears(new Date(editingPlan.created_at), editFormData.timeline_years), 'yyyy-MM-dd'),
       };
       
       await handleUpdatePlan(updatedPlan);
     };
 
     const addMilestone = () => {
-      setFormData({
-        ...formData,
-        milestones: [...formData.milestones, '']
+      setEditFormData({
+        ...editFormData,
+        milestones: [...editFormData.milestones, '']
       });
     };
 
     const updateMilestone = (index: number, value: string) => {
-      const newMilestones = [...formData.milestones];
+      const newMilestones = [...editFormData.milestones];
       newMilestones[index] = value;
-      setFormData({ ...formData, milestones: newMilestones });
+      setEditFormData({ ...editFormData, milestones: newMilestones });
     };
 
     const removeMilestone = (index: number) => {
-      const newMilestones = formData.milestones.filter((_, i) => i !== index);
-      setFormData({ ...formData, milestones: newMilestones });
+      const newMilestones = editFormData.milestones.filter((_: string, i: number) => i !== index);
+      setEditFormData({ ...editFormData, milestones: newMilestones });
     };
 
     return (
@@ -314,14 +329,14 @@ export function VisionView({ initialVisionPlans, user }: VisionViewProps) {
                 <Label htmlFor="edit-title">Title</Label>
                 <Input
                   id="edit-title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  value={editFormData.title}
+                  onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category">Category</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <Select value={editFormData.category} onValueChange={(value) => setEditFormData({ ...editFormData, category: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -343,8 +358,8 @@ export function VisionView({ initialVisionPlans, user }: VisionViewProps) {
               <Label htmlFor="edit-description">Description</Label>
               <Textarea
                 id="edit-description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                value={editFormData.description}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                 required
               />
             </div>
@@ -353,8 +368,8 @@ export function VisionView({ initialVisionPlans, user }: VisionViewProps) {
               <div className="space-y-2">
                 <Label htmlFor="edit-timeline">Timeline</Label>
                 <Select 
-                  value={formData.timeline_years.toString()} 
-                  onValueChange={(value) => setFormData({ ...formData, timeline_years: parseInt(value) as 1 | 3 | 5 | 10 })}
+                  value={editFormData.timeline_years.toString()} 
+                  onValueChange={(value) => setEditFormData({ ...editFormData, timeline_years: parseInt(value) as 1 | 3 | 5 | 10 })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -374,22 +389,22 @@ export function VisionView({ initialVisionPlans, user }: VisionViewProps) {
                   type="number"
                   min="0"
                   max="100"
-                  value={formData.progress_percentage}
-                  onChange={(e) => setFormData({ ...formData, progress_percentage: parseInt(e.target.value) || 0 })}
+                  value={editFormData.progress_percentage}
+                  onChange={(e) => setEditFormData({ ...editFormData, progress_percentage: parseInt(e.target.value) || 0 })}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label>Milestones</Label>
-              {formData.milestones.map((milestone, index) => (
+              {editFormData.milestones.map((milestone: string, index: number) => (
                 <div key={index} className="flex gap-2">
                   <Input
                     value={milestone}
                     onChange={(e) => updateMilestone(index, e.target.value)}
                     placeholder={`Milestone ${index + 1}`}
                   />
-                  {formData.milestones.length > 1 && (
+                  {editFormData.milestones.length > 1 && (
                     <Button
                       type="button"
                       variant="outline"
