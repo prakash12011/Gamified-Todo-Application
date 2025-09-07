@@ -48,7 +48,7 @@ export default function PWATestPage() {
         <ol className="list-decimal list-inside space-y-2 text-sm">
           <li>Open Chrome DevTools (F12)</li>
           <li>Go to Network tab</li>
-          <li>Check "Offline" checkbox</li>
+          <li>Check &quot;Offline&quot; checkbox</li>
           <li>Try navigating or refreshing the page</li>
           <li>You should see the offline page instead of connection errors</li>
           <li>Check Application → Service Workers for more details</li>
