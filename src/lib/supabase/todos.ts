@@ -7,6 +7,9 @@ export async function fetchTodos(userId: string): Promise<Todo[]> {
     .select('*')
     .eq('user_id', userId)
     .order('due_date', { ascending: true });
+
+    console.log("data", data, error, userId);
+    
   if (error) throw error;
   return data as Todo[];
 }

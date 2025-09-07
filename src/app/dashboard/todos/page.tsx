@@ -1,17 +1,13 @@
-"use client";
+import { requireAuth } from "@/lib/auth/server";
 import TodoList from "@/components/todos/todo-list";
-import { useAuth } from "@/hooks/use-auth";
+import { fetchTodos } from "@/lib/supabase/todos";
 
-export default function TodosPage() {
-  const { user } = useAuth();
+export default async function TodosPage() {
+  // Use the helper function to get authenticated user
+  const { user } = await requireAuth();
+  const todos = await fetchTodos(user.id);
 
-  if (!user) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Please log in to view your todos.</p>
-      </div>
-    );
-  }
+  console.log("Fetched todos:", todos, user.id);
 
   return (
     <div className="space-y-6">
@@ -21,8 +17,8 @@ export default function TodosPage() {
           Manage your tasks and earn XP by completing them!
         </p>
       </div>
-      
-      <TodoList />
+
+      <TodoList todos={todos} />
     </div>
   );
 }

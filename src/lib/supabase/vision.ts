@@ -1,8 +1,37 @@
-import { supabase } from './client';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { VisionPlan } from '@/types/vision';
+
+async function createSupabaseClient() {
+  const cookieStore = await cookies();
+  
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
+    }
+  );
+}
 
 export async function fetchVisionPlans(userId: string): Promise<VisionPlan[]> {
   try {
+    const supabase = await createSupabaseClient();
     const { data, error } = await supabase
       .from('vision_plans')
       .select('*')
@@ -18,65 +47,5 @@ export async function fetchVisionPlans(userId: string): Promise<VisionPlan[]> {
   } catch (error) {
     console.error('Error in fetchVisionPlans:', error);
     return [];
-  }
-}
-
-export async function createVisionPlan(visionPlan: Omit<VisionPlan, 'id' | 'created_at' | 'updated_at'>): Promise<VisionPlan | null> {
-  try {
-    const { data, error } = await supabase
-      .from('vision_plans')
-      .insert([visionPlan])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating vision plan:', error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in createVisionPlan:', error);
-    return null;
-  }
-}
-
-export async function updateVisionPlan(id: string, updates: Partial<VisionPlan>): Promise<VisionPlan | null> {
-  try {
-    const { data, error } = await supabase
-      .from('vision_plans')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating vision plan:', error);
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error in updateVisionPlan:', error);
-    return null;
-  }
-}
-
-export async function deleteVisionPlan(id: string): Promise<boolean> {
-  try {
-    const { error } = await supabase
-      .from('vision_plans')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting vision plan:', error);
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error in deleteVisionPlan:', error);
-    return false;
   }
 }

@@ -44,13 +44,16 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     try {
       if (mode === "login") {
         console.log("Attempting login...");
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error, data: sessionData } = await supabase.auth.signInWithPassword({
           email: data.email,
           password: data.password,
         });
         if (error) throw error;
-        console.log("Login successful, redirecting...");
-        router.push("/dashboard");
+        console.log("Login successful, session:", sessionData);
+        
+        // Use window.location.href to trigger a server-side request
+        // This ensures middleware picks up the new session
+        window.location.href = "/dashboard";
       } else {
         console.log("Attempting signup...");
         const { error, data: signUpData } = await supabase.auth.signUp({
@@ -68,7 +71,9 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
             username: data.username,
           }),
         });
-        router.push("/dashboard");
+        
+        // Use window.location.href to trigger a server-side request
+        window.location.href = "/dashboard";
       }
     } catch (e: any) {
       console.error("Auth error:", e);

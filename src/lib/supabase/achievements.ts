@@ -1,4 +1,20 @@
 import { supabase } from './client';
+import { Achievement } from '@/types/profile';
+
+export async function fetchUserAchievements(userId: string): Promise<Achievement[]> {
+  const { data, error } = await supabase
+    .from('achievements')
+    .select('*')
+    .eq('user_id', userId)
+    .order('unlocked_at', { ascending: false });
+  
+  if (error) {
+    console.error('Error fetching achievements:', error);
+    return [];
+  }
+  
+  return data as Achievement[];
+}
 
 export async function checkAndAwardAchievements(userId: string) {
   try {

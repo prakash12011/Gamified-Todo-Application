@@ -1,14 +1,14 @@
 "use client";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
+import { InteractiveButton } from "@/components/ui/interactive-button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
-import { addTodo } from "@/lib/supabase/todos";
+import { addTodo, updateTodo } from "@/lib/supabase/todos";
 import { useAuth } from "@/hooks/use-auth";
-import { TodoDifficulty } from "@/types/todo";
+import { TodoDifficulty, Todo } from "@/types/todo";
 
 const difficultyXPMap = {
   'easy': 10,
@@ -33,39 +33,86 @@ interface TodoFormData {
   recurring_type: 'daily' | 'weekly' | 'monthly' | null;
 }
 
-export default function TodoModal({ onAdded }: { onAdded?: () => void }) {
+export default function TodoModal({ 
+  onAdded, 
+  todo,
+  onClose 
+}: { 
+  onAdded?: () => void;
+  todo?: Todo | null;
+  onClose?: () => void;
+}) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const isEditing = !!todo;
+  
   const [formData, setFormData] = useState<TodoFormData>({
-    title: '',
-    description: '',
-    difficulty: 'easy',
-    due_date: null,
-    is_recurring: false,
-    recurring_type: null,
+    title: todo?.title || '',
+    description: todo?.description || '',
+    difficulty: todo?.difficulty || 'easy',
+    due_date: todo?.due_date ? new Date(todo.due_date) : null,
+    is_recurring: todo?.is_recurring || false,
+    recurring_type: todo?.recurring_type || null,
   });
+
+  // Update form when todo prop changes
+  useEffect(() => {
+    if (todo) {
+      setFormData({
+        title: todo.title || '',
+        description: todo.description || '',
+        difficulty: todo.difficulty || 'easy',
+        due_date: todo.due_date ? new Date(todo.due_date) : null,
+        is_recurring: todo.is_recurring || false,
+        recurring_type: todo.recurring_type || null,
+      });
+      setOpen(true);
+    }
+  }, [todo]);
+
+  // Close modal when editing is done
+  const handleClose = () => {
+    setOpen(false);
+    if (onClose) onClose();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !formData.title.trim()) return;
 
     try {
-      await addTodo({
-        title: formData.title,
-        description: formData.description || undefined,
-        difficulty: formData.difficulty,
-        due_date: formData.due_date ? formData.due_date.toISOString() : null,
-        is_recurring: formData.is_recurring,
-        recurring_type: formData.recurring_type,
-        user_id: user.id,
-        xp_reward: difficultyXPMap[formData.difficulty],
-        coin_reward: difficultyCoinMap[formData.difficulty],
-        completed: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      if (isEditing && todo) {
+        // Update existing todo
+        await updateTodo(todo.id, {
+          title: formData.title,
+          description: formData.description || undefined,
+          difficulty: formData.difficulty,
+          due_date: formData.due_date ? formData.due_date.toISOString() : null,
+          is_recurring: formData.is_recurring,
+          recurring_type: formData.recurring_type,
+          xp_reward: difficultyXPMap[formData.difficulty],
+          coin_reward: difficultyCoinMap[formData.difficulty],
+          updated_at: new Date().toISOString(),
+        });
+      } else {
+        // Add new todo
+        await addTodo({
+          title: formData.title,
+          description: formData.description || undefined,
+          difficulty: formData.difficulty,
+          due_date: formData.due_date ? formData.due_date.toISOString() : null,
+          is_recurring: formData.is_recurring,
+          recurring_type: formData.recurring_type,
+          user_id: user.id,
+          xp_reward: difficultyXPMap[formData.difficulty],
+          coin_reward: difficultyCoinMap[formData.difficulty],
+          completed: false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
       
-      setOpen(false);
+      handleClose();
       setFormData({
         title: '',
         description: '',
@@ -76,17 +123,19 @@ export default function TodoModal({ onAdded }: { onAdded?: () => void }) {
       });
       onAdded?.();
     } catch (error) {
-      console.error('Error adding todo:', error);
+      console.error('Error saving todo:', error);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>Add Todo</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={isEditing ? handleClose : setOpen}>
+      {!isEditing && (
+        <DialogTrigger asChild>
+          <InteractiveButton hoverScale={true} hoverGlow={true}>Add Todo</InteractiveButton>
+        </DialogTrigger>
+      )}
       <DialogContent>
-        <DialogTitle>Add New Todo</DialogTitle>
+        <DialogTitle>{isEditing ? 'Edit Todo' : 'Add New Todo'}</DialogTitle>
         <form className="space-y-3" onSubmit={handleSubmit}>
           <div>
             <Input 
@@ -135,8 +184,9 @@ export default function TodoModal({ onAdded }: { onAdded?: () => void }) {
               id="recurring"
               checked={formData.is_recurring}
               onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_recurring: !!checked }))}
+              className="cursor-pointer"
             />
-            <label htmlFor="recurring" className="text-sm font-medium">Recurring task</label>
+            <label htmlFor="recurring" className="text-sm font-medium cursor-pointer hover:text-primary transition-colors">Recurring task</label>
           </div>
 
           {formData.is_recurring && (
@@ -156,12 +206,12 @@ export default function TodoModal({ onAdded }: { onAdded?: () => void }) {
           )}
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <InteractiveButton type="button" variant="outline" onClick={handleClose} hoverScale={true}>
               Cancel
-            </Button>
-            <Button type="submit" disabled={!formData.title.trim()}>
-              Add Todo
-            </Button>
+            </InteractiveButton>
+            <InteractiveButton type="submit" disabled={!formData.title.trim()} hoverScale={true} hoverGlow={true}>
+              {isEditing ? 'Update Todo' : 'Add Todo'}
+            </InteractiveButton>
           </div>
         </form>
       </DialogContent>
