@@ -10,13 +10,13 @@ export function OfflineIndicator() {
   const [showAlert, setShowAlert] = useState(false);
 
   useEffect(() => {
-    if (!isOnline) {
+    if (isOnline) {
       setShowAlert(true);
       // Auto-hide after 5 seconds if back online
       const timer = setTimeout(() => setShowAlert(false), 5000);
       return () => clearTimeout(timer);
     } else {
-      setShowAlert(false);
+      setShowAlert(true);
     }
   }, [isOnline]);
 
@@ -25,6 +25,8 @@ export function OfflineIndicator() {
   return (
     <div className="fixed top-4 left-4 right-4 z-50">
       <Alert className={`border-l-4 ${isOnline ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
+        <div></div>
+        <div className="alert-description">
         <div className="flex items-center">
           {isOnline ? (
             <Wifi className="w-4 h-4 text-green-600 mr-2" />
@@ -40,6 +42,7 @@ export function OfflineIndicator() {
             Some features may not be available until connection is restored.
           </p>
         )}
+        </div>
       </Alert>
     </div>
   );
