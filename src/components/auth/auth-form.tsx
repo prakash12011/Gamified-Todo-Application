@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
+import { PWAInstallButton } from "@/components/pwa/pwa-install-button";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -120,6 +121,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         }}>
           Continue with GitHub
         </Button> */}
+        <PWAInstallButton />
       </form>
     </Card>
   );
