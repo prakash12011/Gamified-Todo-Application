@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth/server";
 import DashboardStats from "@/components/dashboard/dashboard-stats";
+import { PWADebugPanel } from "@/components/pwa/pwa-debug-panel";
 
 export default async function DashboardPage() {
   // Use the helper function to get authenticated user and supabase client
@@ -26,6 +27,9 @@ export default async function DashboardPage() {
 
       {/* Dynamic Stats Component - Client Side */}
       <DashboardStats userId={user.id} />
+
+      {/* PWA Debug Panel - Only show in development */}
+      {process.env.NODE_ENV === 'development' && <PWADebugPanel />}
     </div>
   );
 }

@@ -28,12 +28,20 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
     const registerSW = async () => {
       if ('serviceWorker' in navigator) {
         try {
+          // Unregister any existing service workers first
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+          }
+
+          // Register new service worker
           const reg = await navigator.serviceWorker.register('/sw.js', {
-            scope: '/'
+            scope: '/',
+            updateViaCache: 'none'
           });
           setRegistration(reg);
 
-          console.log('Service Worker registered:', reg);
+          console.log('Service Worker registered successfully:', reg);
 
           // Handle updates
           reg.addEventListener('updatefound', () => {
@@ -43,13 +51,22 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                   // New content is available, notify user
                   console.log('New content is available and will be used when all tabs for this page are closed.');
+                  // You could show a toast notification here
                 }
               });
             }
           });
+
+          // Handle service worker errors
+          reg.addEventListener('error', (error) => {
+            console.error('Service Worker error:', error);
+          });
+
         } catch (error) {
           console.error('Service Worker registration failed:', error);
         }
+      } else {
+        console.log('Service Worker not supported');
       }
     };
 
