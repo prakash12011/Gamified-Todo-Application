@@ -101,7 +101,8 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Loading..." : mode === "login" ? "Login" : "Sign Up"}
         </Button>
-        <Button type="button" variant="outline" className="w-full" onClick={async () => {
+        {/* DISABLING THE SOCIAL LOGINS FOR NOW AS THESE ARE NOT WORKING */}
+        {/* <Button type="button" variant="outline" className="w-full" onClick={async () => {
           setLoading(true);
           setError(null);
           const { error } = await supabase.auth.signInWithOAuth({ provider: "google" });
@@ -118,7 +119,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           setLoading(false);
         }}>
           Continue with GitHub
-        </Button>
+        </Button> */}
       </form>
     </Card>
   );
