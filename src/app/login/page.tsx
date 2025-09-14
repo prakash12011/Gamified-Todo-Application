@@ -2,8 +2,15 @@
 
 import AuthForm from '@/components/auth/auth-form';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Alert } from '@/components/ui/alert';
+import { Suspense } from 'react';
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+  const message = searchParams.get('message');
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -18,8 +25,25 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+        
+        {error && (
+          <Alert variant="destructive">
+            {error === 'auth_failed' 
+              ? `Authentication failed${message ? `: ${decodeURIComponent(message)}` : ''}` 
+              : error}
+          </Alert>
+        )}
+        
         <AuthForm mode="login" />
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

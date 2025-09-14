@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import DashboardLayout from "@/components/dashboard/dashboard-layout";
+import { ServiceWorkerClear } from "@/components/debug/sw-clear";
 
 export default function Layout({
   children,
@@ -33,5 +34,10 @@ export default function Layout({
     return null;
   }
 
-  return <DashboardLayout>{children}</DashboardLayout>;
+  return (
+    <DashboardLayout>
+      <ServiceWorkerClear />
+      {children}
+    </DashboardLayout>
+  );
 }

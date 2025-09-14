@@ -9,6 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { addTodo, updateTodo } from "@/lib/supabase/todos";
 import { useAuth } from "@/hooks/use-auth";
 import { TodoDifficulty, Todo } from "@/types/todo";
+import { createTodoAction, updateTodoAction } from "@/app/dashboard/todos/actions";
+import { useFormStatus } from "react-dom";
 
 const difficultyXPMap = {
   'easy': 10,

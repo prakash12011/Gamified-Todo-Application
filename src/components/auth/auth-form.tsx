@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Alert } from "@/components/ui/alert";
 import { PWAInstallButton } from "@/components/pwa/pwa-install-button";
+import { CheckCircle, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +24,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -42,6 +44,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
     console.log("Form submitted with data:", data);
     setLoading(true);
     setError(null);
+    setSuccess(null);
     try {
       if (mode === "login") {
         console.log("Attempting login...");
@@ -57,24 +60,54 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         window.location.href = "/dashboard";
       } else {
         console.log("Attempting signup...");
+        
+        // Get the current origin for redirect URL
+        const redirectUrl = `${window.location.origin}/auth/callback`;
+        
         const { error, data: signUpData } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
-        });
-        if (error) throw error;
-        console.log("Signup successful, creating profile...");
-        // Create profile in Supabase
-        await fetch("/api/profile", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            id: signUpData.user?.id,
-            username: data.username,
-          }),
+          options: {
+            emailRedirectTo: redirectUrl,
+            data: {
+              username: data.username,
+            }
+          }
         });
         
-        // Use window.location.href to trigger a server-side request
-        window.location.href = "/dashboard";
+        if (error) throw error;
+        
+        console.log("Signup successful:", signUpData);
+        
+        // Check if email confirmation is required
+        if (signUpData.user && !signUpData.user.email_confirmed_at) {
+          setSuccess("Account created! Please check your email and click the confirmation link to complete signup.");
+          return;
+        }
+        
+        // If user is immediately confirmed (like in dev mode)
+        if (signUpData.user?.id) {
+          console.log("Creating profile...");
+          const profileResponse = await fetch("/api/profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: signUpData.user.id,
+              username: data.username,
+            }),
+          });
+          
+          const profileResult = await profileResponse.json();
+          if (!profileResponse.ok) {
+            console.error("Profile creation failed:", profileResult);
+            throw new Error(profileResult.error || "Failed to create profile");
+          }
+          
+          console.log("Profile created successfully:", profileResult);
+          
+          // Redirect to dashboard
+          window.location.href = "/dashboard";
+        }
       }
     } catch (e: any) {
       console.error("Auth error:", e);
@@ -94,11 +127,37 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         className="space-y-4"
       >
         {mode === "signup" && (
-          <Input placeholder="Username" {...register("username")} />
+          <div>
+            <Input placeholder="Username" {...register("username")} />
+            {errors.username && (
+              <p className="text-sm text-red-600 mt-1">{errors.username.message}</p>
+            )}
+          </div>
         )}
-        <Input placeholder="Email" type="email" {...register("email")} />
-        <Input placeholder="Password" type="password" {...register("password")} />
-        {error && <Alert variant="destructive">{error}</Alert>}
+        <div>
+          <Input placeholder="Email" type="email" {...register("email")} />
+          {errors.email && (
+            <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
+          )}
+        </div>
+        <div>
+          <Input placeholder="Password" type="password" {...register("password")} />
+          {errors.password && (
+            <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
+          )}
+        </div>
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-6 w-6" />
+            <span className="leading-relaxed break-words">{error}</span>
+          </Alert>
+        )}
+        {success && (
+          <Alert variant="success">
+            <CheckCircle className="h-6 w-6" />
+            <span className="leading-relaxed break-words">{success}</span>
+          </Alert>
+        )}
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? "Loading..." : mode === "login" ? "Login" : "Sign Up"}
         </Button>
