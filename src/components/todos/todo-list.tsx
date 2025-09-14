@@ -1,16 +1,13 @@
 "use client";
-import { useEffect, useState } from "react";
-import { fetchTodos, deleteTodos, updateTodo } from "@/lib/supabase/todos";
-import { applyTodoCompletionRewards } from "@/lib/supabase/gamification";
-import { checkAndAwardAchievements } from "@/lib/supabase/achievements";
+import { useState, useTransition } from "react";
 import { Todo } from "@/types/todo";
 import { InteractiveButton } from "@/components/ui/interactive-button";
 import TodoModal from "./todo-modal";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { useAuth } from "@/hooks/use-auth";
 import { format } from "date-fns";
 import { Edit, Trash2 } from "lucide-react";
+import { completeTodoAction, deleteTodosAction } from "@/app/dashboard/todos/actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,42 +20,41 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-export default function TodoList(todosProp: { todos: Todo[] }) {
-  const { user } = useAuth();
-  const [todos, setTodos] = useState<Todo[]>(todosProp.todos || []);
+interface TodoListProps {
+  todos: Todo[];
+}
+
+export default function TodoList({ todos: initialTodos }: TodoListProps) {
+  const [todos, setTodos] = useState<Todo[]>(initialTodos || []);
   const [selected, setSelected] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
-
-  const loadTodos = () => {
-    if (!user) return;
-    setLoading(true);
-    fetchTodos(user.id)
-      .then(setTodos)
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadTodos();
-    (async () => {
-      console.log("Use Effect Fetched todos:", await fetchTodos(user?.id ?? ""));
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  const [isPending, startTransition] = useTransition();
 
   const handleBulkDelete = async () => {
-    setLoading(true);
-    await deleteTodos(selected);
-    setTodos((prev) => prev.filter((t) => !selected.includes(t.id)));
-    setSelected([]);
-    setLoading(false);
+    startTransition(async () => {
+      try {
+        await deleteTodosAction(selected);
+        setSelected([]);
+        // Optimistically update UI
+        setTodos((prev) => prev.filter((t) => !selected.includes(t.id)));
+      } catch (error) {
+        console.error('Error deleting todos:', error);
+        // TODO: Show error toast
+      }
+    });
   };
 
   const handleSingleDelete = async (todoId: string) => {
-    setLoading(true);
-    await deleteTodos([todoId]);
-    setTodos((prev) => prev.filter((t) => t.id !== todoId));
-    setLoading(false);
+    startTransition(async () => {
+      try {
+        await deleteTodosAction([todoId]);
+        // Optimistically update UI
+        setTodos((prev) => prev.filter((t) => t.id !== todoId));
+      } catch (error) {
+        console.error('Error deleting todo:', error);
+        // TODO: Show error toast
+      }
+    });
   };
 
   const handleEdit = (todo: Todo) => {
@@ -67,42 +63,55 @@ export default function TodoList(todosProp: { todos: Todo[] }) {
 
   const handleEditComplete = () => {
     setEditingTodo(null);
-    loadTodos(); // Refresh the list
+    // The modal will trigger a revalidation via server action
   };
 
   const handleComplete = async (id: string) => {
-    setLoading(true);
-    const todo = todos.find(t => t.id === id);
-    if (!todo) {
-      setLoading(false);
-      return;
-    }
-    const now = new Date();
-    const onTime = todo.due_date ? now <= new Date(todo.due_date) : true;
-    const updated = await updateTodo(id, { completed: true, completed_at: now.toISOString() });
-    setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
-    // Gamification logic
-    const rewards = await applyTodoCompletionRewards({
-      userId: todo.user_id,
-      todoId: todo.id,
-      difficulty: todo.difficulty,
-      onTime,
+    startTransition(async () => {
+      try {
+        const todo = todos.find(t => t.id === id);
+        if (!todo) return;
+        
+        await completeTodoAction(id);
+        
+        // Optimistically update UI
+        setTodos((prev) => prev.map((t) => 
+          t.id === id 
+            ? { ...t, completed: true, completed_at: new Date().toISOString() }
+            : t
+        ));
+        
+        // TODO: Show XP/coin gain animation, confetti, streak/achievement notification
+      } catch (error) {
+        console.error('Error completing todo:', error);
+        // TODO: Show error toast
+      }
     });
-    await checkAndAwardAchievements(todo.user_id);
-    // TODO: Show XP/coin gain animation, confetti, streak/achievement notification
-    setLoading(false);
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-muted-foreground">Updating todos...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-x-auto">
       <div className="mb-2 flex gap-2 items-center">
-        <TodoModal onAdded={loadTodos} />
+        <TodoModal onAdded={() => {
+          // The modal will trigger a revalidation via server action
+          // No need to do anything here
+        }} />
         {selected.length > 0 && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <InteractiveButton variant="destructive" disabled={!selected.length} hoverScale={true}>
+              <InteractiveButton 
+                variant="destructive" 
+                disabled={!selected.length || isPending} 
+                hoverScale={true}
+              >
                 Delete Selected ({selected.length})
               </InteractiveButton>
             </AlertDialogTrigger>
@@ -187,7 +196,13 @@ export default function TodoList(todosProp: { todos: Todo[] }) {
               <td className="p-2 flex gap-2">
                 {!todo.completed && (
                   <>
-                    <InteractiveButton size="sm" onClick={() => handleComplete(todo.id)} hoverScale={true} hoverGlow={true}>
+                    <InteractiveButton 
+                      size="sm" 
+                      onClick={() => handleComplete(todo.id)} 
+                      hoverScale={true} 
+                      hoverGlow={true}
+                      disabled={isPending}
+                    >
                       Complete
                     </InteractiveButton>
                     <InteractiveButton 

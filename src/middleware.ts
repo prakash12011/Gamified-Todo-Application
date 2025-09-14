@@ -32,6 +32,11 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Allow auth callback route to proceed without checks
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return supabaseResponse
+  }
+
   // Only protect dashboard routes, not auth routes
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
     if (!user) {
@@ -43,7 +48,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from login/register
-  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register') && user) {
+  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') && user) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/dashboard'
     return NextResponse.redirect(redirectUrl)

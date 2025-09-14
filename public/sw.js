@@ -1,7 +1,7 @@
 // Service Worker for PWA functionality
-const CACHE_NAME = "gamified-todo-v1";
-const STATIC_CACHE = "gamified-todo-static-v1";
-const DYNAMIC_CACHE = "gamified-todo-dynamic-v1";
+const CACHE_NAME = "gamified-todo-v3";
+const STATIC_CACHE = "gamified-todo-static-v3";
+const DYNAMIC_CACHE = "gamified-todo-dynamic-v3";
 
 // Files to cache immediately
 const STATIC_ASSETS = [
@@ -77,6 +77,20 @@ self.addEventListener("fetch", (event) => {
     event.request.url.includes("moz-extension") ||
     event.request.url.includes("safari-extension")
   ) {
+    return;
+  }
+
+  // Skip auth-related routes to prevent interference with authentication flow
+  const url = new URL(event.request.url);
+  if (
+    url.pathname.startsWith("/auth/") ||
+    url.pathname.startsWith("/dashboard") ||
+    url.pathname.includes("/api/auth") ||
+    url.searchParams.has("code") ||
+    url.searchParams.has("access_token") ||
+    url.searchParams.has("refresh_token")
+  ) {
+    // Let auth and dashboard requests go directly to network
     return;
   }
 
@@ -188,6 +202,14 @@ self.addEventListener("fetch", (event) => {
         });
       })
   );
+});
+
+// Handle messages from the client
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    console.log('Service Worker: Received SKIP_WAITING message');
+    self.skipWaiting();
+  }
 });
 
 // Handle background sync for when user comes back online

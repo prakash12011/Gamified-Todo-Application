@@ -32,7 +32,11 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
           const registrations = await navigator.serviceWorker.getRegistrations();
           for (const registration of registrations) {
             await registration.unregister();
+            console.log('Unregistered old service worker');
           }
+
+          // Wait a bit for cleanup
+          await new Promise(resolve => setTimeout(resolve, 100));
 
           // Register new service worker
           const reg = await navigator.serviceWorker.register('/sw.js', {
@@ -43,15 +47,21 @@ export function PWAProvider({ children }: { children: React.ReactNode }) {
 
           console.log('Service Worker registered successfully:', reg);
 
+          // Force immediate activation if there's a waiting worker
+          if (reg.waiting) {
+            reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+          }
+
           // Handle updates
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             if (newWorker) {
               newWorker.addEventListener('statechange', () => {
                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  // New content is available, notify user
-                  console.log('New content is available and will be used when all tabs for this page are closed.');
-                  // You could show a toast notification here
+                  // New content is available, force update
+                  console.log('New service worker available, updating...');
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
                 }
               });
             }

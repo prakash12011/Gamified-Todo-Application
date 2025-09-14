@@ -3,22 +3,36 @@
 import { usePWA } from "@/components/pwa/pwa-provider";
 import { Alert } from "@/components/ui/alert";
 import { Wifi, WifiOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export function OfflineIndicator() {
   const { isOnline } = usePWA();
   const [showAlert, setShowAlert] = useState(false);
+  const [hasBeenOffline, setHasBeenOffline] = useState(false);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
-    if (isOnline) {
-      setShowAlert(true);
-      // Auto-hide after 5 seconds if back online
-      const timer = setTimeout(() => setShowAlert(false), 5000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowAlert(true);
+    // Skip the initial mount to avoid showing "Back Online" on page load
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
     }
-  }, [isOnline]);
+
+    if (!isOnline) {
+      // User went offline
+      setHasBeenOffline(true);
+      setShowAlert(true);
+    } else if (isOnline && hasBeenOffline) {
+      // User came back online (only show if they were previously offline)
+      setShowAlert(true);
+      // Auto-hide after 5 seconds when back online
+      const timer = setTimeout(() => {
+        setShowAlert(false);
+        setHasBeenOffline(false); // Reset the flag
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOnline, hasBeenOffline]);
 
   if (!showAlert) return null;
 
