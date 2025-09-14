@@ -2,6 +2,8 @@
 
 import { PWADebugPanel } from "@/components/pwa/pwa-debug-panel";
 import { PWAStatus } from "@/components/pwa/pwa-status";
+import { TodoDebugPanel } from "@/components/debug/todo-debug-panel";
+import { AuthDebugPanel } from "@/components/debug/auth-debug-panel";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -15,7 +17,7 @@ export default function PWATestPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      <h1 className="text-3xl font-bold">PWA Testing & Debug</h1>
+      <h1 className="text-3xl font-bold">PWA & Todo Testing Debug</h1>
       
       <Card className="p-4">
         <h2 className="text-xl font-semibold mb-4">Quick Tests</h2>
@@ -42,6 +44,12 @@ export default function PWATestPage() {
         <PWAStatus />
         <PWADebugPanel />
       </div>
+
+      {/* Authentication Debug Panel */}
+      <AuthDebugPanel />
+
+      {/* Todo Debug Panel */}
+      <TodoDebugPanel />
 
       <Card className="p-4">
         <h3 className="font-semibold mb-2">Instructions for Testing Offline Mode</h3>

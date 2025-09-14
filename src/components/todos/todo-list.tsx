@@ -47,18 +47,34 @@ export default function TodoList(todosProp: { todos: Todo[] }) {
   }, [user]);
 
   const handleBulkDelete = async () => {
-    setLoading(true);
-    await deleteTodos(selected);
-    setTodos((prev) => prev.filter((t) => !selected.includes(t.id)));
-    setSelected([]);
-    setLoading(false);
+    try {
+      setLoading(true);
+      console.log('Deleting todos:', selected);
+      await deleteTodos(selected);
+      setTodos((prev) => prev.filter((t) => !selected.includes(t.id)));
+      setSelected([]);
+      console.log('Bulk delete successful');
+    } catch (error) {
+      console.error('Error deleting todos:', error);
+      alert(`Failed to delete todos: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSingleDelete = async (todoId: string) => {
-    setLoading(true);
-    await deleteTodos([todoId]);
-    setTodos((prev) => prev.filter((t) => t.id !== todoId));
-    setLoading(false);
+    try {
+      setLoading(true);
+      console.log('Deleting single todo:', todoId);
+      await deleteTodos([todoId]);
+      setTodos((prev) => prev.filter((t) => t.id !== todoId));
+      console.log('Single delete successful');
+    } catch (error) {
+      console.error('Error deleting todo:', error);
+      alert(`Failed to delete todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEdit = (todo: Todo) => {
@@ -71,26 +87,49 @@ export default function TodoList(todosProp: { todos: Todo[] }) {
   };
 
   const handleComplete = async (id: string) => {
-    setLoading(true);
-    const todo = todos.find(t => t.id === id);
-    if (!todo) {
+    try {
+      setLoading(true);
+      const todo = todos.find(t => t.id === id);
+      if (!todo) {
+        console.error('Todo not found:', id);
+        setLoading(false);
+        return;
+      }
+
+      console.log('Completing todo:', id, todo);
+      
+      const now = new Date();
+      const onTime = todo.due_date ? now <= new Date(todo.due_date) : true;
+      
+      const updated = await updateTodo(id, { 
+        completed: true, 
+        completed_at: now.toISOString() 
+      });
+      
+      console.log('Todo updated successfully:', updated);
+      
+      setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      
+      // Gamification logic
+      const rewards = await applyTodoCompletionRewards({
+        userId: todo.user_id,
+        todoId: todo.id,
+        difficulty: todo.difficulty,
+        onTime,
+      });
+      
+      console.log('Rewards applied:', rewards);
+      
+      await checkAndAwardAchievements(todo.user_id);
+      
+      // TODO: Show XP/coin gain animation, confetti, streak/achievement notification
+    } catch (error) {
+      console.error('Error completing todo:', error);
+      // Show user-friendly error message
+      alert(`Failed to complete todo: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
       setLoading(false);
-      return;
     }
-    const now = new Date();
-    const onTime = todo.due_date ? now <= new Date(todo.due_date) : true;
-    const updated = await updateTodo(id, { completed: true, completed_at: now.toISOString() });
-    setTodos((prev) => prev.map((t) => (t.id === id ? updated : t)));
-    // Gamification logic
-    const rewards = await applyTodoCompletionRewards({
-      userId: todo.user_id,
-      todoId: todo.id,
-      difficulty: todo.difficulty,
-      onTime,
-    });
-    await checkAndAwardAchievements(todo.user_id);
-    // TODO: Show XP/coin gain animation, confetti, streak/achievement notification
-    setLoading(false);
   };
 
   if (loading) return <div>Loading...</div>;
