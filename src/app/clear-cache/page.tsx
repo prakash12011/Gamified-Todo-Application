@@ -52,7 +52,7 @@ export default function ClearCachePage() {
       <Card className="max-w-md w-full p-6 text-center">
         <h1 className="text-2xl font-bold mb-4">Clear Cache & Service Worker</h1>
         <p className="text-gray-600 mb-6">
-          If you're experiencing offline page issues, click below to clear all caches and service workers.
+          If you&apos;re experiencing offline page issues, click below to clear all caches and service workers.
         </p>
         <Button 
           onClick={clearEverything}

@@ -37,7 +37,7 @@ export function AuthDebugPanel() {
       if (error) {
         setAuthStatus({
           isAuthenticated: false,
-          error: error?.message || 'Authentication error'
+          error: (error as any)?.message || 'Authentication error'
         })
       } else if (session?.user) {
         setAuthStatus({
