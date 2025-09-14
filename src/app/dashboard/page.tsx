@@ -5,6 +5,9 @@ import { requireAuth } from "@/lib/auth/server";
 import DashboardStats from "@/components/dashboard/dashboard-stats";
 import { PWADebugPanel } from "@/components/pwa/pwa-debug-panel";
 
+// Force dynamic rendering for this page since it uses authentication
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   // Use the helper function to get authenticated user and supabase client
   const { user } = await requireAuth();

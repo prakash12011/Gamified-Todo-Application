@@ -11,6 +11,7 @@ import { CheckCircle, AlertCircle } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { getAuthCallbackUrl, getBaseUrl } from "@/lib/config";
 
 const schema = z.object({
   email: z.string().email(),
@@ -61,8 +62,11 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
       } else {
         console.log("Attempting signup...");
         
-        // Get the current origin for redirect URL
-        const redirectUrl = `${window.location.origin}/auth/callback`;
+        // Get the auth callback URL using our utility
+        const redirectUrl = getAuthCallbackUrl();
+        
+        console.log("Using redirect URL:", redirectUrl);
+        console.log("Base URL:", getBaseUrl());
         
         const { error, data: signUpData } = await supabase.auth.signUp({
           email: data.email,

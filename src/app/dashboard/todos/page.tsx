@@ -3,6 +3,9 @@ import TodoList from "@/components/todos/todo-list";
 import { fetchTodosServer } from "@/lib/supabase/todos-server";
 import { Suspense } from "react";
 
+// Force dynamic rendering for this page since it uses authentication
+export const dynamic = 'force-dynamic';
+
 function TodoListSkeleton() {
   return (
     <div className="space-y-4">

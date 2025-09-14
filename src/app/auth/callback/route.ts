@@ -1,11 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from 'next/headers';
+import { getBaseUrl } from '@/lib/config';
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
-  const origin = requestUrl.origin;
+  const origin = getBaseUrl(); // Use our utility instead of request origin
   const cookieStore = await cookies();
 
   console.log("Auth callback received:", { code: !!code, origin, url: request.url });
