@@ -72,7 +72,7 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
           email: data.email,
           password: data.password,
           options: {
-            emailRedirectTo: redirectUrl,
+            emailRedirectTo: `${getBaseUrl()}/auth/verify`,
             data: {
               username: data.username,
             }

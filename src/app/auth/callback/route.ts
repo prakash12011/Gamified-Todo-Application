@@ -41,6 +41,13 @@ export async function GET(request: NextRequest) {
       
       if (error) {
         console.error("Error exchanging code for session:", error);
+        
+        // Handle PKCE errors specifically
+        if (error.message?.includes('code challenge') || error.message?.includes('code verifier')) {
+          console.log("PKCE error detected, redirecting to signup with message");
+          return NextResponse.redirect(`${origin}/signup?error=verification_failed&message=${encodeURIComponent('Email verification link may have expired. Please try signing up again.')}`);
+        }
+        
         return NextResponse.redirect(`${origin}/login?error=auth_failed&message=${encodeURIComponent(error.message)}`);
       }
 

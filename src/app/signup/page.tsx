@@ -2,8 +2,16 @@
 
 import AuthForm from '@/components/auth/auth-form';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Alert } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
+import { Suspense } from 'react';
 
-export default function SignupPage() {
+function SignupContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+  const message = searchParams.get('message');
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -18,8 +26,24 @@ export default function SignupPage() {
             </Link>
           </p>
         </div>
+        
+        {error && message && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <span>{decodeURIComponent(message)}</span>
+          </Alert>
+        )}
+        
         <AuthForm mode="signup" />
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignupContent />
+    </Suspense>
   );
 }
