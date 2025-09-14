@@ -6,10 +6,29 @@ import { getBaseUrl } from '@/lib/config';
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
+  const error = requestUrl.searchParams.get("error");
+  const errorDescription = requestUrl.searchParams.get("error_description");
   const origin = getBaseUrl(); // Use our utility instead of request origin
   const cookieStore = await cookies();
 
-  console.log("Auth callback received:", { code: !!code, origin, url: request.url });
+  console.log("Auth callback received:", { 
+    code: !!code, 
+    error, 
+    errorDescription,
+    origin, 
+    url: request.url 
+  });
+
+  // Handle errors from Supabase
+  if (error) {
+    console.error("Auth callback error from URL:", { error, errorDescription });
+    
+    if (error === 'access_denied' || errorDescription?.includes('expired')) {
+      return NextResponse.redirect(`${origin}/signup?error=verification_failed&message=${encodeURIComponent('Your verification link has expired. Please try signing up again.')}`);
+    }
+    
+    return NextResponse.redirect(`${origin}/login?error=auth_failed&message=${encodeURIComponent(errorDescription || error)}`);
+  }
 
   if (code) {
     const supabase = createServerClient(

@@ -16,6 +16,25 @@ export default function EmailVerifyPage() {
 
   useEffect(() => {
     const handleEmailVerification = async () => {
+      // First check if there are error parameters in the URL
+      const error = searchParams.get('error');
+      const errorCode = searchParams.get('error_code');
+      const errorDescription = searchParams.get('error_description');
+      
+      if (error) {
+        console.error('Email verification error from URL:', { error, errorCode, errorDescription });
+        setStatus('error');
+        
+        if (errorCode === 'otp_expired') {
+          setMessage('Your verification link has expired. Please sign up again to receive a new verification email.');
+        } else if (error === 'access_denied') {
+          setMessage('Email verification was denied or the link is invalid. Please try signing up again.');
+        } else {
+          setMessage(`Verification failed: ${errorDescription || error}. Please try signing up again.`);
+        }
+        return;
+      }
+
       const token = searchParams.get('token');
       const type = searchParams.get('type');
       
@@ -28,32 +47,32 @@ export default function EmailVerifyPage() {
       try {
         console.log('Handling email verification:', { token: token.substring(0, 20) + '...', type });
         
-        // For signup verification, we'll handle it differently
-        if (type === 'signup') {
-          // Try to verify the email using the token
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'signup'
-          });
-
+        // For PKCE flow, we need to exchange the code for a session
+        if (token.startsWith('pkce_')) {
+          console.log('Handling PKCE verification flow');
+          
+          // Try to handle session from URL using built-in Supabase method
+          const { data, error } = await supabase.auth.getSession();
+          
           if (error) {
-            console.error('Email verification error:', error);
+            console.error('PKCE session error:', error);
             setStatus('error');
-            setMessage(`Verification failed: ${error.message}. Please try signing up again.`);
+            setMessage(`Verification failed: ${error.message}. The verification link may have expired. Please try signing up again.`);
             return;
           }
 
-          if (data.user) {
-            console.log('Email verification successful:', data.user.id);
+          // If we have a session, the verification was successful
+          if (data.session?.user) {
+            console.log('PKCE verification successful:', data.session.user.id);
             
-            // Create profile after successful verification
+            // Create profile
             try {
               const profileResponse = await fetch('/api/profile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  id: data.user.id,
-                  username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
+                  id: data.session.user.id,
+                  username: data.session.user.user_metadata?.username || data.session.user.email?.split('@')[0],
                 }),
               });
 
@@ -67,12 +86,60 @@ export default function EmailVerifyPage() {
             setStatus('success');
             setMessage('Email verified successfully! Redirecting to dashboard...');
             
-            // Redirect to dashboard after a short delay
             setTimeout(() => {
               router.push('/dashboard');
             }, 2000);
             return;
           }
+          
+          // If no session, try to trigger the auth flow
+          console.log('No session found, checking for auth state change');
+          setStatus('error');
+          setMessage('Unable to complete verification. Please try signing up again.');
+          return;
+        }
+        
+        // For non-PKCE tokens (legacy OTP flow)
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'signup'
+        });
+
+        if (error) {
+          console.error('OTP verification error:', error);
+          setStatus('error');
+          setMessage(`Verification failed: ${error.message}. Please try signing up again.`);
+          return;
+        }
+
+        if (data.user) {
+          console.log('OTP verification successful:', data.user.id);
+          
+          // Create profile
+          try {
+            const profileResponse = await fetch('/api/profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: data.user.id,
+                username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
+              }),
+            });
+
+            if (!profileResponse.ok) {
+              console.error('Profile creation failed during verification');
+            }
+          } catch (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
+
+          setStatus('success');
+          setMessage('Email verified successfully! Redirecting to dashboard...');
+          
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 2000);
+          return;
         }
 
         setStatus('error');

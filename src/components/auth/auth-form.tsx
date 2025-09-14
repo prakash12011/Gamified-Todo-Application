@@ -67,12 +67,13 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         
         console.log("Using redirect URL:", redirectUrl);
         console.log("Base URL:", getBaseUrl());
+        console.log("Current origin:", window.location.origin);
         
         const { error, data: signUpData } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
           options: {
-            emailRedirectTo: `${getBaseUrl()}/auth/verify`,
+            emailRedirectTo: redirectUrl,
             data: {
               username: data.username,
             }

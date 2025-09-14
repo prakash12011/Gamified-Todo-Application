@@ -8,14 +8,20 @@
  * In development: uses window.location.origin (browser) or localhost (server)
  */
 export function getBaseUrl(): string {
-  // If we have the environment variable, use it (production)
-  if (process.env.NEXT_PUBLIC_FRONTEND_URL) {
-    return process.env.NEXT_PUBLIC_FRONTEND_URL;
+  // In browser, always use current origin for development
+  if (typeof window !== 'undefined') {
+    // If we're on localhost, use localhost regardless of env var
+    if (window.location.origin.includes('localhost')) {
+      return window.location.origin;
+    }
+    
+    // Otherwise use env var or current origin
+    return process.env.NEXT_PUBLIC_FRONTEND_URL || window.location.origin;
   }
   
-  // In browser, use current origin
-  if (typeof window !== 'undefined') {
-    return window.location.origin;
+  // Server-side: use env var if available, otherwise fallback
+  if (process.env.NEXT_PUBLIC_FRONTEND_URL) {
+    return process.env.NEXT_PUBLIC_FRONTEND_URL;
   }
   
   // Server-side fallback for development
