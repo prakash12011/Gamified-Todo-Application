@@ -28,8 +28,8 @@ export default function EmailVerifyPage() {
           <Alert variant="default" className="border-orange-200 bg-orange-50">
             <AlertCircle className="h-4 w-4 text-orange-600" />
             <div className="text-orange-700">
-              <p className="font-medium mb-2">We've simplified the signup process!</p>
-              <p className="text-sm">You can now create an account without email verification. You'll be redirected to the signup page automatically.</p>
+              <p className="font-medium mb-2">We&apos;ve simplified the signup process!</p>
+              <p className="text-sm">You can now create an account without email verification. You&apos;ll be redirected to the signup page automatically.</p>
             </div>
           </Alert>
           <div className="space-y-2">
