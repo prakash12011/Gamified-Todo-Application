@@ -27,31 +27,86 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // IMPORTANT: This refreshes the session and ensures cookies are properly set
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
 
-  // Allow auth callback route to proceed without checks
-  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+  // Skip middleware for static files and API routes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.') // files with extensions
+  ) {
     return supabaseResponse
   }
 
-  // Only protect dashboard routes, not auth routes
-  if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    if (!user) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/login'
-      redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
+  // Allow auth callback route to proceed without checks
+  if (pathname.startsWith('/auth/callback') || pathname.startsWith('/auth/verify')) {
+    return supabaseResponse
   }
 
-  // Redirect authenticated users away from login/register
-  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') && user) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/dashboard'
-    return NextResponse.redirect(redirectUrl)
+  // Skip auth check for debug pages in development
+  if (process.env.NODE_ENV === 'development' && 
+      (pathname.startsWith('/test-connection') || pathname.startsWith('/clear-auth'))) {
+    return supabaseResponse
+  }
+
+  try {
+    // IMPORTANT: This refreshes the session and ensures cookies are properly set
+    const {
+      data: { user },
+      error
+    } = await supabase.auth.getUser()
+
+    // Handle auth errors gracefully
+    if (error) {
+      // If there's an auth error on a protected route, redirect to login
+      if (pathname.startsWith('/dashboard')) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/login'
+        redirectUrl.searchParams.set('error', 'auth_failed')
+        redirectUrl.searchParams.set('message', encodeURIComponent(error.message))
+        return NextResponse.redirect(redirectUrl)
+      }
+      // For non-protected routes, continue without user
+    }
+
+    // Protect dashboard routes
+    if (pathname.startsWith('/dashboard')) {
+      if (!user) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/login'
+        redirectUrl.searchParams.set('redirectedFrom', pathname)
+        return NextResponse.redirect(redirectUrl)
+      }
+    }
+
+    // Redirect authenticated users away from auth pages
+    if ((pathname === '/login' || pathname === '/signup') && user) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/dashboard'
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Redirect root to dashboard if authenticated, login if not
+    if (pathname === '/') {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = user ? '/dashboard' : '/login'
+      return NextResponse.redirect(redirectUrl)
+    }
+
+  } catch (error) {
+    // If middleware fails, log in development but don't break the app
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Middleware error:', error)
+    }
+    
+    // For dashboard routes, redirect to login on error
+    if (pathname.startsWith('/dashboard')) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('error', 'middleware_error')
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   return supabaseResponse
@@ -64,8 +119,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * Feel free to modify this pattern to include more paths.
+     * - .*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$ (static assets)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)',
   ],
 }

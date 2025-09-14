@@ -9,10 +9,16 @@ export function createClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: 'pkce',
+        flowType: 'implicit',
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'supabase.auth.token',
+        storageKey: 'sb-hqsfhnmpknusoffnjcnv-auth-token',
         debug: process.env.NODE_ENV === 'development'
+      },
+      // Add production optimizations
+      realtime: {
+        params: {
+          eventsPerSecond: 10
+        }
       }
     }
   )
@@ -24,11 +30,18 @@ export const supabase = createClient()
 // Function to handle auth errors and refresh tokens
 export async function handleAuthError() {
   try {
-    console.log('Handling auth error - clearing session and redirecting to login');
     await supabase.auth.signOut();
-    // Clear any cached data
+    
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('supabase.auth.token');
+      const keysToRemove = [
+        'sb-hqsfhnmpknusoffnjcnv-auth-token',
+        'supabase.auth.token', // Legacy key
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
       window.location.href = '/login';
     }
   } catch (error) {
@@ -42,22 +55,39 @@ export async function checkAuthStatus() {
     const { data: { session }, error } = await supabase.auth.getSession();
     
     if (error) {
-      console.error('Auth status check error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Auth status check error:', error);
+      }
       
       // Handle refresh token errors
       if (error.message.includes('refresh_token_not_found') || 
           error.message.includes('Invalid Refresh Token')) {
-        console.log('Refresh token invalid, signing out user');
         await handleAuthError();
         return { session: null, error };
       }
     }
     
-    console.log('Auth Status - Session:', session?.user?.id ? 'Valid' : 'None', 'Error:', error);
     return { session, error };
   } catch (error) {
-    console.error('Auth status check failed:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Auth status check failed:', error);
+    }
     await handleAuthError();
     return { session: null, error };
   }
+}
+
+// Production-ready auth state listener
+export function createAuthStateListener(callback: (session: any) => void) {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    async (event, session) => {
+      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        callback(session);
+      } else if (event === 'SIGNED_IN') {
+        callback(session);
+      }
+    }
+  );
+
+  return () => subscription.unsubscribe();
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import AuthForm from '@/components/auth/auth-form';
+import SimpleAuthForm from '@/components/auth/simple-auth-form';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Alert } from '@/components/ui/alert';
@@ -34,7 +34,7 @@ function SignupContent() {
           </Alert>
         )}
         
-        <AuthForm mode="signup" />
+        <SimpleAuthForm mode="signup" />
       </div>
     </div>
   );
