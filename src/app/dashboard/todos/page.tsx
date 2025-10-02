@@ -25,8 +25,6 @@ export default async function TodosPage() {
     const { user } = await requireAuth();
     const todos = await fetchTodosServer(user.id);
 
-    console.log("Server-side fetched todos:", todos, user.id);
-
     return (
       <div className="space-y-6">
         <div>

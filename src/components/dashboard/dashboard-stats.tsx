@@ -139,7 +139,7 @@ export default function DashboardStats({ userId }: DashboardStatsProps) {
       </div>
 
       {/* Quick Actions & Recent Activity */}
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Quick Actions */}
         <InteractiveCard>
           <CardHeader>
