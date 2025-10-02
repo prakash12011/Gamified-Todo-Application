@@ -78,7 +78,7 @@ export function PWADebugPanel() {
   };
 
   return (
-    <Card className="p-6 m-4">
+    <Card className="p-6">
       <h2 className="text-xl font-bold mb-4">PWA Debug Panel</h2>
       
       {/* Connection Status */}

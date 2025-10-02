@@ -15,12 +15,12 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
-      <div className="flex justify-between items-center">
-        <div>
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-bold">Welcome back, {user.email?.split('@')[0] || 'User'}!</h1>
           <p className="text-muted-foreground">Ready to conquer your day?</p>
         </div>
-        <Button asChild className="hover:scale-105 transition-all cursor-pointer">
+        <Button asChild className="hover:scale-105 transition-all cursor-pointer self-end">
           <Link href="/dashboard/todos">
             <Plus className="mr-2 h-4 w-4" />
             Add Todo
