@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Todo } from "@/types/todo";
 import { InteractiveButton } from "@/components/ui/interactive-button";
 import TodoModal from "./todo-modal";
@@ -36,6 +36,10 @@ export default function TodoList({ todos: initialTodos }: TodoListProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [editingTodo, setEditingTodo] = useState<Todo | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    setTodos(initialTodos || []);
+  }, [initialTodos]);
 
   const handleBulkDelete = async () => {
     startTransition(async () => {

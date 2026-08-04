@@ -15,9 +15,21 @@ import {
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const pageTitles: Record<string, string> = {
+  "/dashboard": "Dashboard",
+  "/dashboard/todos": "Todos",
+  "/dashboard/calendar": "Calendar",
+  "/dashboard/vision": "Vision Board",
+  "/dashboard/profile": "Profile",
+  "/dashboard/analytics": "Analytics",
+};
 
 export default function Topbar() {
   const { user, signOut } = useAuth();
+  const pathname = usePathname();
+  const pageTitle = pageTitles[pathname] ?? "Dashboard";
   const [darkMode, setDarkMode] = useState(false);
   const [profile, setProfile] = useState<Profile | null>(null);
 
@@ -66,7 +78,7 @@ export default function Topbar() {
             <line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/>
           </svg>
         </Button>
-        <div className="font-semibold text-lg">Dashboard</div>
+        <div className="font-semibold text-lg">{pageTitle}</div>
       </div>
       <div className="flex items-center gap-4">
         <Badge variant="secondary">Lvl {displayProfile.level}</Badge>

@@ -64,7 +64,7 @@ export async function middleware(request: NextRequest) {
         const redirectUrl = request.nextUrl.clone()
         redirectUrl.pathname = '/login'
         redirectUrl.searchParams.set('error', 'auth_failed')
-        redirectUrl.searchParams.set('message', encodeURIComponent(error.message))
+        redirectUrl.searchParams.set('message', error.message)
         return NextResponse.redirect(redirectUrl)
       }
       // For non-protected routes, continue without user

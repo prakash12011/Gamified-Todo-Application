@@ -2,6 +2,7 @@
 
 import { Home, Calendar, User, BarChart, CheckSquare, Eye, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -16,6 +17,10 @@ const navItems = [
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActive = (href: string) =>
+    href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
 
   // Listen for toggle-sidebar event from topbar
   useEffect(() => {
@@ -65,17 +70,25 @@ export default function Sidebar() {
         </div>
         
         <nav className="flex flex-col gap-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
-              onClick={() => setIsOpen(false)} // Close sidebar on mobile after navigation
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
-          ))}
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                  active
+                    ? "bg-primary text-primary-foreground font-medium"
+                    : "hover:bg-muted"
+                }`}
+                onClick={() => setIsOpen(false)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
       </aside>
     </>

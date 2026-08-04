@@ -9,12 +9,9 @@ export function createClient() {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: true,
-        flowType: 'implicit',
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-        storageKey: 'sb-hqsfhnmpknusoffnjcnv-auth-token',
+        flowType: 'pkce',
         debug: process.env.NODE_ENV === 'development'
       },
-      // Add production optimizations
       realtime: {
         params: {
           eventsPerSecond: 10
@@ -35,7 +32,7 @@ export async function handleAuthError() {
     if (typeof window !== 'undefined') {
       const keysToRemove = [
         'sb-hqsfhnmpknusoffnjcnv-auth-token',
-        'supabase.auth.token', // Legacy key
+        'supabase.auth.token',
       ];
       
       keysToRemove.forEach(key => {
